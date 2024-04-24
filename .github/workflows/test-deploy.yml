@@ -6,14 +6,12 @@ on:
       - main
 
 env:
-  AWS_REGION: us-east-1                   # set this to your preferred AWS region, e.g. us-west-1
-  ECR_REPOSITORY: ecs-devops-sandbox-repository           # set this to your Amazon ECR repository name
-  ECS_SERVICE: ecs-devops-sandbox-service                 # set this to your Amazon ECS service name
-  ECS_CLUSTER: ecs-devops-sandbox-cluster                 # set this to your Amazon ECS cluster name
-  ECS_TASK_DEFINITION: task-definition.json # set this to the path to your Amazon ECS task definition
-                                               # file, e.g. .aws/task-definition.json
-  CONTAINER_NAME: ecs-devops-sandbox           # set this to the name of the container in the
-                                               # containerDefinitions section of your task definition
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: ecs-devops-sandbox-repository
+  ECS_SERVICE: ecs-devops-sandbox-service
+  ECS_CLUSTER: ecs-devops-sandbox-cluster
+  ECS_TASK_DEFINITION: task-definition.json
+  CONTAINER_NAME: ecs-devops-sandbox
 
 permissions:
   contents: read
@@ -26,7 +24,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.10
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5  # Updated to use setup-python@v5
       with:
         python-version: "3.10"
     - name: Install dependencies
@@ -36,14 +34,11 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
-        # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
         pytest
-
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
@@ -71,9 +66,6 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        # Build a docker container and
-        # push it to ECR so that it can
-        # be deployed to ECS.
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
